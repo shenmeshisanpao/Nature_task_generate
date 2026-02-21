@@ -369,76 +369,77 @@ def translate_batch_en2zh(texts: List[str], cfg: Dict[str,Any]) -> List[Optional
     return out
 
 # ---------------- 主题分类 ----------------
-TOPICS = ["生命科学","人工智能","3D打印和增材制造","其他"]
+# ---------------- 主题分类 ----------------
+# 修改为核物理与天文学相关标签
+TOPICS = ["核物理", "核天体物理", "天文学", "人工智能", "其他"]
 
 def classify_topic_heu(text: str) -> str:
     t = text.lower()
 
-    # ---- 生命科学 ----
+    # ---- 核天体物理 / Nuclear Astrophysics ----
+    # 逻辑：同时包含核物理和天文学关键词，或者包含核生成、r-过程等核心词
     if re.search(
         r"\b("
-        r"genome|genomic|transcriptome|metagenome|proteome|"
-        r"cellular|stem\s*cell|tissue|organ|neuron|neuro|"
-        r"protein|rna|mrna|dna|"
-        r"immun|immune|immunology|virus|viral|"
-        r"cancer|tumor|oncology|pathway|biology|biological|biomed|biomedical|life\s*science|"
-        r"biochemistry|molecular|"
-        r"clinical trial|patient|disease|therapy"
+        r"nucleosynthesis|s-process|r-process|rp-process|p-process|"
+        r"stellar\s*nucleosynthesis|explosive\s*burning|nova|supernova|x-ray\s*burst"
         r")\b",
         t,
     ):
-        return "生命科学"
+        return "核天体物理"
 
-    # ---- 人工智能 ----
+    # ---- 核物理 / Nuclear Physics ----
     if re.search(
         r"\b("
-        r"ai|artificial\s*intelligence|machine\s*learning|ml|deep\s*learning|dl|"
-        r"neural\s*network|cnn|rnn|gan|gpt|transformer|bert|llm|foundation\s*model|"
-        r"reinforcement\s*learning|rl|q-learning|"
-        r"self\-supervised|supervised\s*learning|unsupervised\s*learning|few\-shot|zero\-shot|"
-        r"transfer\s*learning|representation\s*learning|backpropagation|"
-        r"computer\s*vision|image\s*recognition|object\s*detection|segmentation|"
-        r"natural\s*language\s*processing|nlp|language\s*model|speech\s*recognition|"
-        r"recommendation\s*system|knowledge\s*graph|ai\s*agent|autonomous|multi\-agent"
+        r"nuclear|nuclei|nucleus|nucleon|hadron|isobar|isotope|radioactive|"
+        r"fission|shell\s*model|liquid\s*drop|cross\s*section|binding\s*energy|"
+        r"spallation|heavy-ion"
+        r")\b",
+        t,
+    ):
+        # 再次检查是否更偏向天体物理
+        if re.search(r"\b(stellar|astrophys|star|cosmos|galactic)\b", t):
+            return "核天体物理"
+        return "核物理"
+
+    # ---- 天文学 / Astronomy & Astrophysics ----
+    if re.search(
+        r"\b("
+        r"astronomy|astrophysics|telescope|galaxy|galactic|star|planet|planetary|"
+        r"cosmology|cosmic|black\s*hole|redshift|nebula|dark\s*matter|dark\s*energy"
+        r")\b",
+        t,
+    ):
+        return "天文学"
+
+    # ---- 人工智能 / AI (可选保留，作为交叉学科) ----
+    if re.search(
+        r"\b("
+        r"machine\s*learning|deep\s*learning|neural\s*network|ai|artificial\s*intelligence"
         r")\b",
         t,
     ):
         return "人工智能"
 
-    # ---- 3D打印和增材制造 ----
-    if re.search(
-        r"\b("
-        r"3d\s*print|3d\-print|additive\s*manufactur|rapid\s*prototyping|"
-        r"fused\s*deposition\s*modeling|fdm|fused\s*filament\s*fabrication|fff|"
-        r"stereolithography|sla|selective\s*laser\s*sintering|sls|"
-        r"powder\s*bed|binder\s*jetting|direct\s*energy\s*deposition|ded|"
-        r"electron\s*beam\s*melting|ebm|inkjet\s*printing|bioprinting|bio\-printing|"
-        r"extrusion\s*printing|laser\s*melting|metal\s*printing|metal\s*additive"
-        r")\b",
-        t,
-    ):
-        return "3D打印和增材制造"
-
     return "其他"
-
 
 def classify_topic(title: str, abstract: Optional[str], cfg: Dict[str,Any]) -> str:
     ocfg = (cfg.get("openai") or {})
+    # 如果配置了使用模型分类且有 API Key，则使用模型进行分类
     if ocfg.get("classifier", False) and ocfg.get("api_key"):
         prompt = (
-            "请把下面论文按主题打一个且仅一个标签，候选集合："
-            "['生命科学','人工智能','3D打印和增材制造','其他']。"
-            "只输出标签本身，不要解释。\n"
+            f"请将以下论文按主题标记。候选标签集合：{TOPICS}。\n"
+            "仅输出标签名称，不要有任何解释。\n"
             f"标题：{title}\n摘要：{abstract or ''}"
         )
         out = _openai_chat(
-            [{"role":"system","content":"You are a precise tagger."},
+            [{"role":"system","content":"You are a precise scientific paper classifier."},
              {"role":"user","content":prompt}], cfg)
         if out:
-            out = out.strip().replace("'", "").replace(" ", "")
+            out = out.strip().replace("'", "").replace("\"", "").strip()
             for k in TOPICS:
                 if k in out:
                     return k
+    # 否则使用本地启发式规则
     return classify_topic_heu(f"{title}\n{abstract or ''}")
 
 # ---------------- 日志 ----------------
