@@ -4,7 +4,7 @@ cron_logs/
 
 backfill_enrich.py
 backfill_metadata_interactive.py
-config.json
+# config.json
 page.html
 rss_state.db
 run_demo.sh

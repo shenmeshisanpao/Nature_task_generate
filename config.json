@@ -1,0 +1,21 @@
+{
+    "feeds": [
+        "https://www.nature.com/natastron.rss",
+        "https://feeds.feedburner.com/edp_aa?format=xml",
+        "https://iopscience.iop.org/journal/rss/0004-637X",
+        "https://iopscience.iop.org/journal/rss/1538-3881",
+        "https://feeds.feedburner.com/edp_epja?format=xml",
+        "https://iopscience.iop.org/journal/rss/0954-3899",
+        "https://feeds.aps.org/rss/recent/rmp.xml"
+    ],
+    "db": "./rss_state.db",
+    "out_dir": "./reports",
+    "http_timeout": 30,
+    "sleep_between_fetches": 1.0,
+    "openai": {
+        "api_key": "YOUR_DASHSCOPE_API_KEY",
+        "base_url": "https://api.deepseek.com/v1",
+        "model": "deepseek-chat",
+        "classifier": true
+    }
+}
